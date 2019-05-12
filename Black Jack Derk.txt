@@ -1,0 +1,191 @@
+import java.util.ArrayList;
+import java.util.Random;
+import java.util.Scanner;
+
+public class BlackJack {
+
+	public static void main(String[] args) {
+		new BlackJack().SpeelSpel();
+
+	}
+
+	void SpeelSpel() {
+		System.out.println("Welkom bij BlackJack");
+		KaartenDeck speeldeck = new KaartenDeck();
+		Bank bank = new Bank();
+		Scanner sc = new Scanner(System.in);
+//		System.out.println("hoeveel wil je inzetten?");
+
+		ArrayList<Speler> spelers = new ArrayList<Speler>(52);
+
+		System.out.println("Met hoeveel spelers wil je spelen?");
+		int aantalSpelers = sc.nextInt();
+
+		for (int i = 1; i <= aantalSpelers; i++) {
+			spelers.add(new Speler(i));
+		}
+
+		for (int i = 0; i < spelers.size(); i++) {
+			System.out.println(spelers.get(i).naam + " krijgt twee kaarten:");
+			speeldeck.kaartdelen(spelers.get(i));
+			speeldeck.kaartdelen(spelers.get(i));
+			spelers.get(i).puntenBerekenen();
+			kaartenPrinten(spelers.get(i));
+		}
+
+		System.out.println("De bank krijgt deze kaarten:");
+		speeldeck.kaartdelen(bank);
+		speeldeck.kaartdelen(bank);
+		bank.puntenBerekenen();
+		kaartenPrinten(bank);
+
+		for (int i = 0; i < spelers.size(); i++) {
+			beurtSpeler(spelers.get(i), speeldeck);
+		}
+
+		beurtBank(bank, speeldeck);
+
+		for (int i = 0; i < spelers.size(); i++) {
+			if (bank.puntenInHand >= spelers.get(i).puntenInHand) {
+				System.out.println("de bank heeft gewonnen van " + spelers.get(i).naam);
+			} else {
+				System.out.println(spelers.get(i).naam + "heeft gewonnen van de bank");
+			}
+			System.out.println("het spel is afgelopen");
+		}
+	}
+
+	Speler beurtSpeler(Speler s, KaartenDeck kd) {
+		Scanner sc = new Scanner(System.in);
+		System.out.println(s.naam + " wil je nog een kaart of wil je passen? (k/p)");
+		String input = sc.nextLine();
+		if (input.equals("k")) {
+			kd.kaartdelen(s);
+			s.puntenBerekenen();
+			kaartenPrinten(s);
+			if (s.puntenInHand > 21) {
+				System.out.println(s.naam + " heeft meer dan 21 punten dus heeft verloren");
+				s.puntenInHand = 0;
+				return s;
+			}
+			beurtSpeler(s, kd);
+		}
+		if (input.equals("p")) {
+			return s;
+		} else {
+			return s;
+		}
+	}
+
+	Deelnemer beurtBank(Deelnemer bk, KaartenDeck kd) {
+
+		System.out.println("de bank heeft deze kaarten:");
+		bk.puntenBerekenen();
+		kaartenPrinten(bk);
+
+		if (bk.puntenInHand < 18) {
+			System.out.println("de bank gaat nog een kaart spelen:");
+			kd.kaartdelen(bk);
+			bk.puntenBerekenen();
+			kaartenPrinten(bk);
+			beurtBank(bk, kd);
+		}
+		if (bk.puntenInHand < 18 & bk.puntenInHand > 21) {
+			return bk;
+		}
+		if (bk.puntenInHand > 21) {
+			System.out.println("De bank heeft verloren.");
+			SpeelSpel();
+		}
+
+		return bk;
+
+	}
+
+	void kaartenPrinten(Deelnemer s) {
+		for (int i = 0; i < s.kaartenInHand.size(); i++) {
+			System.out.println(s.kaartenInHand.get(i).naam);
+		}
+		System.out.println("Dat zijn " + s.puntenInHand + " punten");
+	}
+
+	class Deelnemer {
+		String naam;
+		int puntenInHand;
+		int inzet;
+		int geldOmMeeTeSpelen;
+		boolean meerDan21 = false;
+		boolean gewonnen = false;
+
+		ArrayList<Kaart> kaartenInHand = new ArrayList<Kaart>();
+
+		void puntenBerekenen() {
+			puntenInHand = 0;
+			for (int i = 0; i < kaartenInHand.size(); i++) {
+				puntenInHand += kaartenInHand.get(i).punten;
+			}
+			for (int i = 0; i < kaartenInHand.size(); i++) {
+				if (puntenInHand > 21 & kaartenInHand.get(i).naam.contains("Aas"))
+					puntenInHand -= 10;
+			}
+		}
+	}
+
+	class Speler extends Deelnemer {
+		String naam;
+		boolean meerDan21 = false;
+		int inzet;
+		int geldOmMeeTeSpelen;
+		boolean nogNietMeerDan21;
+
+		Speler(int s) {
+			this.naam = ("speler" + s);
+		}
+
+	}
+
+	class Bank extends Deelnemer {
+		boolean meerDan21 = false;
+		int inzet;
+		int gelOmMeeTeSpelen;
+		boolean nogNietMeerDan21;
+
+	}
+
+	class KaartenDeck {
+
+		String[] kleuren = { "Harten", "Schoppen", "Ruiten", "Klaver" };
+		String[] tekens = { "2", "3", "4", "5", "6", "7", "8", "9", "10", "Boer", "Vrouw", "Heer", "Aas" };
+
+		ArrayList<Kaart> deck = new ArrayList<Kaart>(52);
+
+		KaartenDeck() {
+			for (int i = 0; i < kleuren.length; i++)
+				for (int j = 0; j < tekens.length; j++)
+					this.deck.add(new Kaart((kleuren[i] + "-" + tekens[j]),
+							(tekens[j].length() == 1 ? Integer.parseInt(tekens[j])
+									: (tekens[j].length() == 3 ? 11 : 10))));
+		}
+
+		Deelnemer kaartdelen(Deelnemer s) {
+			Random rnd = new Random();
+			int i = rnd.nextInt(deck.size());
+			Kaart kaartGespeeld = deck.get(i);
+			deck.remove(i);
+			s.kaartenInHand.add(kaartGespeeld);
+			return s;
+		}
+	}
+
+	class Kaart {
+		String kleur;
+		String teken;
+		int punten;
+		String naam;
+
+		Kaart(String naam, int punten) {
+			this.naam = naam;
+			this.punten = punten;
+		}
+	}
+}
